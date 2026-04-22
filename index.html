@@ -128,7 +128,15 @@
                         </svg>
                         Database Pengunjung (Live)
                     </h2>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
+                        <!-- LINK GOOGLE SHEETS DITAMBAHKAN DI SINI -->
+                        <a href="https://docs.google.com/spreadsheets/d/1bTBc8DL8wcI4gvIMvJWrj3vRSvURcGhsBDxh1C5TH1E/edit?usp=sharing" target="_blank" class="bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Kelola di Sheets
+                        </a>
+
                         <button onclick="loadData()" id="refreshBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -153,7 +161,6 @@
                                 <th class="px-4 py-3 font-bold">Nama / NIK</th>
                                 <th class="px-4 py-3 font-bold">U/JK</th>
                                 <th class="px-4 py-3 font-bold">Status</th>
-                                <th class="px-4 py-3 font-bold text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -208,9 +215,6 @@
                 loadingText.innerText = "Menarik data dari Google Sheets...";
             }
             
-            // Untuk GET, kita menggunakan fetch standar. Jika ini masih gagal, 
-            // artinya setting Akses "Semua Orang" (Anyone) di Google Apps Script belum berhasil tersimpan dengan benar,
-            // ATAU akun Google Anda (misal email kampus/institusi) memblokir pembagian file ke publik.
             fetch(scriptURL)
                 .then(response => response.json())
                 .then(result => {
@@ -236,7 +240,7 @@
             tbody.innerHTML = '';
 
             if (!dataArray || dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada data pengunjung.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada data pengunjung.</td></tr>';
                 return;
             }
 
@@ -259,13 +263,6 @@
                     <td class="px-4 py-3">
                         <div class="text-sm font-semibold">${visitor.kategori}</div>
                         <div class="text-xs text-gray-500">${visitor.alamat}</div>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="deleteData(${visitor.row_index})" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg transition-colors" title="Hapus Data">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -314,47 +311,6 @@
                     btnText.innerText = "Simpan Data"; loadingSpinner.style.display = 'none';
                 });
         });
-
-        // --- DELETE DATA (Menghapus Data) ---
-        function deleteData(rowIndex) {
-            const isConfirmed = confirm("Yakin ingin menghapus data pengunjung ini?");
-            if (!isConfirmed) return;
-
-            const tableLoading = document.getElementById('tableLoading');
-            const loadingText = document.getElementById('loadingText');
-            const loadingSpinnerTable = document.getElementById('loadingSpinnerTable');
-
-            tableLoading.style.display = 'flex';
-            if(loadingSpinnerTable) loadingSpinnerTable.style.display = 'block';
-            if(loadingText) {
-                loadingText.className = "text-emerald-700 font-semibold text-sm animate-pulse text-center px-4";
-                loadingText.innerText = "Sedang menghapus data di Google Sheets...";
-            }
-
-            // Menggunakan URLSearchParams agar data ID Baris pasti terkirim
-            const formData = new URLSearchParams();
-            formData.append('action', 'delete');
-            formData.append('row_index', rowIndex);
-
-            fetch(scriptURL, { 
-                method: 'POST', 
-                body: formData, 
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            })
-                .then(() => {
-                    showToast("Perintah hapus terkirim!");
-                    
-                    // Beri waktu 2 detik untuk Google Sheets benar-benar menghapus barisnya
-                    setTimeout(() => {
-                        loadData(); 
-                    }, 2000);
-                })
-                .catch(() => {
-                    showToast("Gagal menghapus data.", true);
-                    tableLoading.style.display = 'none';
-                });
-        }
 
         // Auto load saat pertama kali dibuka
         window.onload = () => {
